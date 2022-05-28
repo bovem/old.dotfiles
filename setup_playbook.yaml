@@ -1,0 +1,66 @@
+---
+  - name: Set up DEVENV
+    hosts: all
+    become: yes
+    become_user: root
+    tasks:
+       - name: Upgrade all packages
+         dnf:
+           name: "*"
+           state: latest
+
+       - name: Install packages
+         dnf:
+           name: 
+            - podman
+            - python3
+            - python3-pip
+            - git
+            - podman-compose
+            - zsh
+            - util-linux-user
+            - vim
+           state: latest
+
+       - name: Change git config (user.name)
+         command: git config --global user.name "bovem"
+
+       - name: Change git config (user.email)
+         command: git config --global user.email "av_nish@outlook.com"
+
+       - name: Generate SSH keys
+         command: echo "n" | ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+
+       - name: Download minikube
+         get_url:
+           url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+           dest: ./minikube-linux-amd64
+           mode: '0440' 
+
+       - name: Install minikube
+         command: install ./minikube-linux-amd64 /usr/local/bin/minikube
+
+       - name: Add kubectl repo
+         copy:
+           dest: "/etc/yum.repos.d/kubernetes.repo"
+           content: |
+             [kubernetes]
+             name=Kubernetes
+             baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+             enabled=1
+             gpgcheck=1
+             repo_gpgcheck=1
+             gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+
+       - name: Install kubectl
+         dnf:
+           name: kubectl
+           state: latest
+
+       - name: Add ZSH setup script
+         copy:
+           dest: "/tmp/zsh_setup.sh"
+           content: |
+             usermod -s /usr/bin/zsh $USER
+             sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
